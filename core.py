@@ -4,35 +4,12 @@ import re
 RequestLine = collections.namedtuple("RequestLine", ["method", "target", "version"])
 StatusLine = collections.namedtuple("StatusLine", ["version", "code", "reason"])
 
-class Method(object):
-  def __init__(self, value):
-    self._value = value.upper()
-
-  def __cmp__(self, other):
-    if not isinstance(other, Method):
-      other = Method(other)
-    if self._value == other._value:
-      return 0
-    elif self._value < other._value:
-      return -1
-    else:
-      return 1
-
-  def __repr__(self):
-    return repr(self._value)
+class Method(str):
+  def __new__(cls, value):
+    return str.__new__(cls, value.upper())
 
 
-class HttpVersion(object):
-  def __init__(self, major, minor):
-    self.major = major
-    self.minor = minor
-
-  def __eq__(self, other):
-    if isinstance(other, tuple):
-      return (self.major, self.minor) == other
-
-  def __repr__(self):
-    return "HTTP/%d.%d" % (self.major, self.minor)
+HttpVersion = collections.namedtuple("HttpVersion", ["major", "minor"])
 
 
 def parse_version(version):
