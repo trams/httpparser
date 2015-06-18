@@ -5,9 +5,20 @@ RequestLine = collections.namedtuple("RequestLine", ["method", "target", "versio
 StatusLine = collections.namedtuple("StatusLine", ["version", "code", "reason"])
 
 class Method(str):
-  def __new__(cls, value):
-    return str.__new__(cls, value.upper())
+  def __new__(cls, value, distinct=False):
+    upper = value.upper()
+    if distinct:
+      return str.__new__(cls, upper)
+    else:
+      if upper == "GET":
+        return GET
+      elif upper == "POST":
+        return POST
+      else:
+        return str.__new__(cls, upper)
 
+GET = Method("GET", True)
+POST = Method("POST", True)
 
 HttpVersion = collections.namedtuple("HttpVersion", ["major", "minor"])
 
