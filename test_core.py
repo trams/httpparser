@@ -17,6 +17,13 @@ def test_parse_version():
   version = core.parse_version("HTTP/1.0")
   assert version == (1, 0)
 
+def test_version_str():
+  version = core.HttpVersion(1, 0)
+  assert str(version) == "HTTP/1.0"
+
+  version = core.HttpVersion(1, 1)
+  assert str(version) == "HTTP/1.1"
+
 def test_parse_bad_version():
   for bad in ["HTTP/1", "FTP/1.0", "HTTP/a.0", "HTTP/12.3", " HTTP/1.1 "]:
     with pytest.raises(Exception):

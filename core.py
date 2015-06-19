@@ -20,7 +20,15 @@ class Method(str):
 GET = Method("GET", True)
 POST = Method("POST", True)
 
-HttpVersion = collections.namedtuple("HttpVersion", ["major", "minor"])
+
+HttpVersionBase = collections.namedtuple("HttpVersion", ["major", "minor"])
+
+class HttpVersion(HttpVersionBase):
+  def __new__(cls, major, minor):
+    return HttpVersionBase.__new__(cls, major, minor)
+
+  def __str__(self):
+    return "HTTP/%d.%d" % (self.major, self.minor)
 
 
 def parse_version(version):
