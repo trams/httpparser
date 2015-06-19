@@ -52,3 +52,21 @@ def parse_status_line(line):
     return StatusLine(parse_version(parts[0]), int(parts[1]), parts[2])
   except ValueError:
     raise BadStatusLineError("Unable to parse status line: bad status code")
+
+
+Header = collections.namedtuple("Header", ["name", "value"])
+
+class BadHeaderLineError(ValueError):
+  pass
+
+token_re = re.compile("^[a-zA-Z0-9!#$%&'*+-.^_`|~]+$")
+
+def parse_header_line(line):
+  try:
+    name, value = line.split(":", 1)
+  except ValueError:
+    raise BadHeaderLineError("Unable to parse header line: expected :")
+  if token_re.match(name) is None:
+    raise BadHeaderLineError("Unable to parse header line: bad header name")
+  value = value.strip()
+  return Header(name, value)

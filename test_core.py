@@ -45,3 +45,22 @@ def test_bad_status_line():
   ]:
     with pytest.raises(core.BadStatusLineError):
       core.parse_status_line(bad)
+
+def test_header_line():
+  header = core.parse_header_line("Date: Tue, 15 Nov 1994 08:12:31 GMT")
+  assert header.name == "Date"
+  assert header.value == "Tue, 15 Nov 1994 08:12:31 GMT"
+
+def test_header_spaces_are_not_part_of_value():
+  header = core.parse_header_line("Name:    Some  value  ");
+  assert header.name == "Name"
+  assert header.value == "Some  value"
+
+def test_bad_headers():
+  for bad in [
+    "Complex name: value",
+    "NoValue",
+    ": empty value"
+  ]:
+    with pytest.raises(core.BadHeaderLineError):
+      core.parse_header_line(bad)
