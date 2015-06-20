@@ -1,55 +1,81 @@
 import collections
 import re
 
-RequestLine = collections.namedtuple("RequestLine", ["method", "target", "version"])
-StatusLine = collections.namedtuple("StatusLine", ["version", "code", "reason"])
-
+RequestLineBase = collections.namedtuple("RequestLine", ["method", "target", "version"])
 
 class BadRequestLineError(ValueError):
   pass
 
+class RequestLine(RequestLineBase):
+  def __new__(cls, *args):
+    return RequestLineBase.__new__(cls, *args)
+
+  @staticmethod
+  def from_string(line):
+    parts = line.split(" ")
+    if len(parts) != 3:
+      raise BadRequestLineError("Unable to parse request line")
+
+    return RequestLine(
+      Method(parts[0]),
+      parts[1],
+      HttpVersion.from_string(parts[2]));
+
+  def __str__(self):
+    return " ".join([str(item) for item in self])
+
+
+StatusLineBase = collections.namedtuple("StatusLine", ["version", "code", "reason"])
+
 class BadStatusLineError(ValueError):
   pass
 
+class StatusLine(StatusLineBase):
+  def __new__(cls, *args):
+    return StatusLineBase.__new__(cls, *args)
 
-def parse_request_line(line):
-  parts = line.split(" ")
-  if len(parts) != 3:
-    raise BadRequestLineError("Unable to parse request line")
+  @staticmethod
+  def from_string(line):
+    parts = line.split(" ", 2)
+    if len(parts) != 3:
+      raise BadStatusLineError("Unable to parse status line")
 
-  return RequestLine(Method(parts[0]), parts[1], parse_version(parts[2]));
+    try:
+      return StatusLine(
+        HttpVersion.from_string(parts[0]),
+        int(parts[1]),
+        parts[2])
+    except ValueError:
+      raise BadStatusLineError("Unable to parse status line: bad status code")
+
+  def __str__(self):
+    return " ".join([str(item) for item in self])
 
 
-def parse_status_line(line):
-  parts = line.split(" ", 2)
-  if len(parts) != 3:
-    raise BadStatusLineError("Unable to parse status line")
-
-  try:
-    return StatusLine(parse_version(parts[0]), int(parts[1]), parts[2])
-  except ValueError:
-    raise BadStatusLineError("Unable to parse status line: bad status code")
-
-
-Header = collections.namedtuple("Header", ["name", "value"])
-
+HeaderBase = collections.namedtuple("Header", ["name", "value"])
 
 class BadHeaderLineError(ValueError):
   pass
 
-
 token_re = re.compile("^[a-zA-Z0-9!#$%&'*+-.^_`|~]+$")
 
+class Header(HeaderBase):
+  def __new__(cls, *args):
+    return HeaderBase.__new__(cls, *args)
 
-def parse_header_line(line):
-  try:
-    name, value = line.split(":", 1)
-  except ValueError:
-    raise BadHeaderLineError("Unable to parse header line: expected :")
-  if token_re.match(name) is None:
-    raise BadHeaderLineError("Unable to parse header line: bad header name")
-  value = value.strip()
-  return Header(name, value)
+  @staticmethod
+  def from_string(line):
+    try:
+      name, value = line.split(":", 1)
+    except ValueError:
+      raise BadHeaderLineError("Unable to parse header line: expected :")
+    if token_re.match(name) is None:
+      raise BadHeaderLineError("Unable to parse header line: bad header name")
+    value = value.strip()
+    return Header(name, value)
+
+  def __str__(self):
+    return "%s: %s" % (self.name, self.value)
 
 
 class Method(str):
@@ -72,13 +98,15 @@ POST = Method("POST", True)
 HttpVersionBase = collections.namedtuple("HttpVersion", ["major", "minor"])
 
 class HttpVersion(HttpVersionBase):
+  content_re = re.compile("^HTTP/(\d).(\d)$")
+
   def __new__(cls, major, minor):
     return HttpVersionBase.__new__(cls, major, minor)
 
+  @staticmethod
+  def from_string(version):
+    match = HttpVersion.content_re.match(version)
+    return HttpVersion(int(match.group(1)), int(match.group(2)))
+
   def __str__(self):
     return "HTTP/%d.%d" % (self.major, self.minor)
-
-
-def parse_version(version):
-  match = re.match("^HTTP/(\d).(\d)$", version)
-  return HttpVersion(int(match.group(1)), int(match.group(2)))
